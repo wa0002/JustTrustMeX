@@ -4,6 +4,8 @@ import android.util.Log;
 
 import com.zx.Justmeplush.config.MainConfig;
 
+import de.robv.android.xposed.XposedBridge;
+
 
 public class CLogUtils {
 
@@ -13,6 +15,7 @@ public class CLogUtils {
 	private static String TAG = "XposedInto";
 
 	public static void e(String msg){
+		XposedBridge.log(msg);
 			if(MainConfig.isDebug) {
 				InfiniteLog(TAG, msg);
 			}

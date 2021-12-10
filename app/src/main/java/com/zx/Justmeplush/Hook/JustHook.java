@@ -100,18 +100,18 @@ public class JustHook implements IXposedHookLoadPackage {
     private int flag = 0;
 
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
-        shared = new XSharedPreferences("com.zx.Justmeplush", "config");
-        shared.reload();
-        InvokPackage = shared.getString("APP_INFO", "");
-        //先重启 选择 好 要进行Hook的 app
-        if (InvokPackage == null || InvokPackage.equals("")) {
-            return;
-        } else {
-            if (lpparam.packageName.equals(InvokPackage)) {
-                CLogUtils.e("找到 包名  ");
-                HookAttach();
-            }
-        }
+//        shared = new XSharedPreferences("com.lzb.Justmeplush", "config");
+//        shared.reload();
+//        InvokPackage = shared.getString("APP_INFO", "");
+//        //先重启 选择 好 要进行Hook的 app
+//        if (InvokPackage == null || InvokPackage.equals("")) {
+//            return;
+//        } else {
+//            if (lpparam.packageName.equals(InvokPackage)) {
+        CLogUtils.e("找到APP:"+lpparam.packageName);
+        HookAttach();
+//            }
+//        }
         this.lpparam = lpparam;
     }
 
@@ -128,6 +128,15 @@ public class JustHook implements IXposedHookLoadPackage {
                         super.afterHookedMethod(param);
                         mOtherContext = (Context) param.args[0];
                         mLoader = mOtherContext.getClassLoader();
+                        CLogUtils.e("Hook到    attach");
+//                        if (flag == 0) {
+                            //在 oncteate的 执行完毕 这个时候 壳的 类以及初始化 完毕了
+
+
+                            //防止 加壳的 app 做了混淆 在 onCreate 执行结束 在进行 挂钩
+
+//                            flag = 1;
+//                        }
 
                     }
                 });
@@ -137,17 +146,11 @@ public class JustHook implements IXposedHookLoadPackage {
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         super.afterHookedMethod(param);
                         CLogUtils.e("Hook到    onCreate");
-                        if (flag == 0) {
-                            //在 oncteate的 执行完毕 这个时候 壳的 类以及初始化 完毕了
-                            getAllClassName();
-                            GetJustMePlushHook();
-                            //防止 加壳的 app 做了混淆 在 onCreate 执行结束 在进行 挂钩
-                            processOkHttp(mLoader);
-                            processHttpClientAndroidLib(mLoader);
-                            processXutils(mLoader);
-                            HookOkHttpClient();
-                            flag = 1;
-                        }
+                        processOkHttp(mLoader);
+                        processHttpClientAndroidLib(mLoader);
+                        processXutils(mLoader);
+                        GetJustMePlushHook();
+                        getAllClassName();
                     }
 
                 });
@@ -169,6 +172,7 @@ public class JustHook implements IXposedHookLoadPackage {
      * .certificatePinner()
      */
     private void HookOkHttpClient() {
+        CLogUtils.e("开始执行 自识别 okHttp  Hook ");
         initAllClass();
         getClientClass();
         getBuilder();
@@ -454,15 +458,20 @@ public class JustHook implements IXposedHookLoadPackage {
             int privateCount = 0;
             int publicCount = 0;
             int SetTypeCount = 0;
-
+            if(mClass.getName().equals("okhttp3.CertificatePinner")){
+                return mClass;
+            }
             Field[] declaredFields = mClass.getDeclaredFields();
             //长度 是 3 本身是 final类型
             if (declaredFields.length == 3 && Modifier.isFinal(mClass.getModifiers())) {
+
                 for (Field field : declaredFields) {
                     //私有 并且是 final类型
                     if (Modifier.isFinal(field.getModifiers()) && Modifier.isPrivate(field.getModifiers())) {
                         privateCount++;
-                        if (field.getType().getName().equals(Set.class.getName())) {
+                        if (field.getType().getName().equals(Set.class.getName())
+                                || field.getType().getName().equals(List.class.getName())//中行的是LIST????
+                        ) {
                             SetTypeCount++;
                         }
                     }
@@ -470,6 +479,9 @@ public class JustHook implements IXposedHookLoadPackage {
                         publicCount++;
                     }
                 }
+//                if(mClass.getName().equals("okhttp3.CertificatePinner")){
+//                    CLogUtils.e("publicCount:"+publicCount+",SetTypeCount:"+SetTypeCount+",privateCount:"+privateCount);
+//                }
                 if (publicCount == 1 && SetTypeCount == 1 && privateCount == 2) {
                     return mClass;
                 }
@@ -774,181 +786,296 @@ public class JustHook implements IXposedHookLoadPackage {
         } catch (ClassNotFoundException e) {
             // pass
         }
+        try {
+            classLoader.loadClass("okhttp3.CertificatePinner");
+            XposedHelpers.findAndHookMethod("okhttp3.CertificatePinner", classLoader, "check$okhttp", new Object[]{String.class, "kotlin.jvm.functions.Function0", new XC_MethodReplacement() {
+                /* class com.p004zx.Justmeplush.Hook.JustHook.C026927 */
+
+                /* access modifiers changed from: protected */
+                public Object replaceHookedMethod(XC_MethodHook.MethodHookParam methodHookParam) throws Throwable {
+                    return null;
+                }
+            }});
+        } catch (Throwable unused5) {
+        }
+
     }
 
     private void GetJustMePlushHook() {
         /* Apache Hooks */
         /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
         /* public DefaultHttpClient() */
-        findAndHookConstructor(DefaultHttpClient.class, new XC_MethodHook() {
-
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-
-                setObjectField(param.thisObject, "defaultParams", null);
-                setObjectField(param.thisObject, "connManager", getSCCM());
-            }
-        });
-
-
-
-        /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
-        /* public DefaultHttpClient(HttpParams params) */
-        findAndHookConstructor(DefaultHttpClient.class, HttpParams.class, new XC_MethodHook() {
-
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-
-                setObjectField(param.thisObject, "defaultParams", param.args[0]);
-                setObjectField(param.thisObject, "connManager", getSCCM());
-            }
-        });
-
-        /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
-        /* public DefaultHttpClient(ClientConnectionManager conman, HttpParams params) */
-        findAndHookConstructor(DefaultHttpClient.class, ClientConnectionManager.class, HttpParams.class, new XC_MethodHook() {
-
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-
-                HttpParams params = (HttpParams) param.args[1];
-
-                setObjectField(param.thisObject, "defaultParams", params);
-                setObjectField(param.thisObject, "connManager", getCCM(param.args[0], params));
-            }
-        });
-
-        /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
-        /* public SSLSocketFactory( ... ) */
-        findAndHookConstructor(SSLSocketFactory.class, String.class, KeyStore.class, String.class, KeyStore.class,
-                SecureRandom.class, HostNameResolver.class, new XC_MethodHook() {
+        if(hasHttpClient()) {
+            try {
+                findAndHookConstructor(DefaultHttpClient.class, new XC_MethodHook() {
 
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                        String algorithm = (String) param.args[0];
-                        KeyStore keystore = (KeyStore) param.args[1];
-                        String keystorePassword = (String) param.args[2];
-                        SecureRandom random = (SecureRandom) param.args[4];
+                        setObjectField(param.thisObject, "defaultParams", null);
+                        setObjectField(param.thisObject, "connManager", getSCCM());
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
-                        KeyManager[] keymanagers = null;
-                        TrustManager[] trustmanagers = null;
+            /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
+            /* public DefaultHttpClient(HttpParams params) */
+            try {
+                findAndHookConstructor(DefaultHttpClient.class, HttpParams.class, new XC_MethodHook() {
 
-                        if (keystore != null) {
-                            keymanagers = (KeyManager[]) callStaticMethod(SSLSocketFactory.class, "createKeyManagers", keystore, keystorePassword);
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+
+                        setObjectField(param.thisObject, "defaultParams", param.args[0]);
+                        setObjectField(param.thisObject, "connManager", getSCCM());
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
+            /* public DefaultHttpClient(ClientConnectionManager conman, HttpParams params) */
+            try {
+                findAndHookConstructor(DefaultHttpClient.class, ClientConnectionManager.class, HttpParams.class, new XC_MethodHook() {
+
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+
+                        HttpParams params = (HttpParams) param.args[1];
+
+                        setObjectField(param.thisObject, "defaultParams", params);
+                        setObjectField(param.thisObject, "connManager", getCCM(param.args[0], params));
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
+        /* public SSLSocketFactory( ... ) */
+        try {
+            findAndHookConstructor(SSLSocketFactory.class, String.class, KeyStore.class, String.class, KeyStore.class,
+                    SecureRandom.class, HostNameResolver.class, new XC_MethodHook() {
+
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+
+                            String algorithm = (String) param.args[0];
+                            KeyStore keystore = (KeyStore) param.args[1];
+                            String keystorePassword = (String) param.args[2];
+                            SecureRandom random = (SecureRandom) param.args[4];
+
+                            KeyManager[] keymanagers = null;
+                            TrustManager[] trustmanagers = null;
+
+                            if (keystore != null) {
+                                keymanagers = (KeyManager[]) callStaticMethod(SSLSocketFactory.class, "createKeyManagers", keystore, keystorePassword);
+                            }
+
+                            trustmanagers = new TrustManager[]{new ImSureItsLegitTrustManager()};
+
+                            setObjectField(param.thisObject, "sslcontext", SSLContext.getInstance(algorithm));
+                            callMethod(getObjectField(param.thisObject, "sslcontext"), "init", keymanagers, trustmanagers, random);
+                            setObjectField(param.thisObject, "socketfactory",
+                                    callMethod(getObjectField(param.thisObject, "sslcontext"), "getSocketFactory"));
                         }
 
-                        trustmanagers = new TrustManager[]{new ImSureItsLegitTrustManager()};
-
-                        setObjectField(param.thisObject, "sslcontext", SSLContext.getInstance(algorithm));
-                        callMethod(getObjectField(param.thisObject, "sslcontext"), "init", keymanagers, trustmanagers, random);
-                        setObjectField(param.thisObject, "socketfactory",
-                                callMethod(getObjectField(param.thisObject, "sslcontext"), "getSocketFactory"));
-                    }
-
-                });
+                    });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
 
         /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
         /* public static SSLSocketFactory getSocketFactory() */
-        findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "getSocketFactory", new XC_MethodReplacement() {
+        try {
+            findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "getSocketFactory", new XC_MethodReplacement() {
 
-            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                return newInstance(SSLSocketFactory.class);
-            }
-        });
+                protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                    return newInstance(SSLSocketFactory.class);
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
         /* public boolean isSecure(Socket) */
-        findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "isSecure", Socket.class, new XC_MethodReplacement() {
+        try {
+            findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "isSecure", Socket.class, new XC_MethodReplacement() {
 
-            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                return true;
-            }
-        });
+                protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                    return true;
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         /* JSSE Hooks */
         /* libcore/luni/src/main/java/javax/net/ssl/TrustManagerFactory.java */
         /* public final TrustManager[] getTrustManager() */
-        findAndHookMethod("javax.net.ssl.TrustManagerFactory", lpparam.classLoader, "getTrustManagers", new XC_MethodHook() {
+        try {
+            findAndHookMethod("javax.net.ssl.TrustManagerFactory", lpparam.classLoader, "getTrustManagers", new XC_MethodHook() {
 
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                if (hasTrustManagerImpl()) {
-                    Class<?> cls = findClass("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader);
+                    if (hasTrustManagerImpl()) {
+                        Class<?> cls = findClass("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader);
 
-                    TrustManager[] managers = (TrustManager[]) param.getResult();
-                    if (managers.length > 0 && cls.isInstance(managers[0]))
-                        return;
+                        TrustManager[] managers = (TrustManager[]) param.getResult();
+                        if (managers.length > 0 && cls.isInstance(managers[0]))
+                            return;
+                    }
+
+                    param.setResult(new TrustManager[]{new ImSureItsLegitTrustManager()});
                 }
-
-                param.setResult(new TrustManager[]{new ImSureItsLegitTrustManager()});
-            }
-        });
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         /* libcore/luni/src/main/java/javax/net/ssl/HttpsURLConnection.java */
         /* public void setDefaultHostnameVerifier(HostnameVerifier) */
-        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setDefaultHostnameVerifier",
-                HostnameVerifier.class, new XC_MethodReplacement() {
+        try {
+            findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setDefaultHostnameVerifier",
+                    HostnameVerifier.class, new XC_MethodReplacement() {
 
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return null;
-                    }
-                });
+                        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                            return null;
+                        }
+                    });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         /* libcore/luni/src/main/java/javax/net/ssl/HttpsURLConnection.java */
         /* public void setSSLSocketFactory(SSLSocketFactory) */
-        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setSSLSocketFactory", javax.net.ssl.SSLSocketFactory.class,
-                new XC_MethodReplacement() {
+        try {
+            findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setSSLSocketFactory", javax.net.ssl.SSLSocketFactory.class,
+                    new XC_MethodReplacement() {
 
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return null;
-                    }
-                });
+                        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                            return null;
+                        }
+                    });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         /* libcore/luni/src/main/java/javax/net/ssl/HttpsURLConnection.java */
         /* public void setHostnameVerifier(HostNameVerifier) */
-        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setHostnameVerifier", HostnameVerifier.class,
-                new XC_MethodReplacement() {
+        try {
+            findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setHostnameVerifier", HostnameVerifier.class,
+                    new XC_MethodReplacement() {
 
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return null;
-                    }
-                });
+                        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                            return null;
+                        }
+                    });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
 
         /* WebView Hooks */
         /* frameworks/base/core/java/android/webkit/WebViewClient.java */
         /* public void onReceivedSslError(Webview, SslErrorHandler, SslError) */
 
-        findAndHookMethod("android.webkit.WebViewClient", lpparam.classLoader, "onReceivedSslError",
-                WebView.class, SslErrorHandler.class, SslError.class, new XC_MethodReplacement() {
+        try {
+            findAndHookMethod("android.webkit.WebViewClient", lpparam.classLoader, "onReceivedSslError",
+                    WebView.class, SslErrorHandler.class, SslError.class, new XC_MethodReplacement() {
 
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        ((android.webkit.SslErrorHandler) param.args[1]).proceed();
-                        return null;
-                    }
-                });
+                        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                            ((SslErrorHandler) param.args[1]).proceed();
+                            return null;
+                        }
+                    });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         /* frameworks/base/core/java/android/webkit/WebViewClient.java */
         /* public void onReceivedError(WebView, int, String, String) */
 
-        findAndHookMethod("android.webkit.WebViewClient", lpparam.classLoader, "onReceivedError",
-                WebView.class, int.class, String.class, String.class, new XC_MethodReplacement() {
+        try {
+            findAndHookMethod("android.webkit.WebViewClient", lpparam.classLoader, "onReceivedError",
+                    WebView.class, int.class, String.class, String.class, new XC_MethodReplacement() {
 
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return null;
-                    }
-                });
+                        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                            return null;
+                        }
+                    });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         //SSLContext.init >> (null,ImSureItsLegitTrustManager,null)
-        findAndHookMethod("javax.net.ssl.SSLContext", lpparam.classLoader, "init", KeyManager[].class, TrustManager[].class, SecureRandom.class, new XC_MethodHook() {
+        try {
+            findAndHookMethod("javax.net.ssl.SSLContext", lpparam.classLoader, "init", KeyManager[].class, TrustManager[].class, SecureRandom.class, new XC_MethodHook() {
 
-            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
 
-                param.args[0] = null;
-                param.args[1] = new TrustManager[]{new ImSureItsLegitTrustManager()};
-                param.args[2] = null;
+                    param.args[0] = null;
+                    param.args[1] = new TrustManager[]{new ImSureItsLegitTrustManager()};
+                    param.args[2] = null;
 
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        if (hasTrustManagerImpl()) {
+            try {
+                XposedHelpers.findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", this.lpparam.classLoader, "checkServerTrusted", new Object[]{X509Certificate[].class, String.class, new XC_MethodReplacement() {
+                    /* class com.p004zx.Justmeplush.Hook.JustHook.C025918 */
+
+                    /* access modifiers changed from: protected */
+                    public Object replaceHookedMethod(XC_MethodHook.MethodHookParam methodHookParam) throws Throwable {
+                        return 0;
+                    }
+                }});
+            } catch (Throwable th14) {
+                th14.printStackTrace();
             }
-        });
+            try {
+                XposedHelpers.findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", this.lpparam.classLoader, "checkServerTrusted", new Object[]{X509Certificate[].class, String.class, String.class, new XC_MethodReplacement() {
+                    /* class com.p004zx.Justmeplush.Hook.JustHook.C026019 */
 
+                    /* access modifiers changed from: protected */
+                    public Object replaceHookedMethod(XC_MethodHook.MethodHookParam methodHookParam) throws Throwable {
+                        return new ArrayList();
+                    }
+                }});
+            } catch (Throwable th15) {
+                th15.printStackTrace();
+            }
+            try {
+                XposedHelpers.findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", this.lpparam.classLoader, "checkServerTrusted", new Object[]{X509Certificate[].class, String.class, SSLSession.class, new XC_MethodReplacement() {
+                    /* class com.p004zx.Justmeplush.Hook.JustHook.C026220 */
+
+                    /* access modifiers changed from: protected */
+                    public Object replaceHookedMethod(XC_MethodHook.MethodHookParam methodHookParam) throws Throwable {
+                        return new ArrayList();
+                    }
+                }});
+            } catch (Throwable th16) {
+                th16.printStackTrace();
+            }
+        }
+
+
+    }
+
+    public  static boolean hasHttpClient() {
+
+        try {
+            Class.forName("org.apache.http.impl.client.DefaultHttpClient");
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+        return true;
     }
 
     /* Helpers */
@@ -981,9 +1108,9 @@ public class JustHook implements IXposedHookLoadPackage {
                 DexFile dexFile = (DexFile) dexFileField.get(dexElements[i]);
                 getDexFileClassName(dexFile);
             }
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+            HookOkHttpClient();
+        } catch (Exception e) {
+            CLogUtils.e("getAllClassNameAndInit error "+e.getMessage());
             e.printStackTrace();
         }
         return;

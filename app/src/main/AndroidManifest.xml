@@ -27,7 +27,7 @@
             android:value="true" />
         <meta-data
             android:name="xposeddescription"
-            android:value="升级版Just  ----珍惜" />
+            android:value="超级升级版 by 消失的鱼" />
         <meta-data
             android:name="xposedminversion"
             android:value="54" />
