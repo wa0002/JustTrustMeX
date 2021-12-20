@@ -47,6 +47,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import dalvik.system.BaseDexClassLoader;
 import dalvik.system.DexFile;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
@@ -727,7 +728,7 @@ public class JustHook implements IXposedHookLoadPackage {
                             return true;
                         }
                     });
-        } catch (ClassNotFoundException e) {
+        } catch (Throwable e) {
             // pass
         }
 
@@ -747,7 +748,7 @@ public class JustHook implements IXposedHookLoadPackage {
                             return null;
                         }
                     });
-        } catch (ClassNotFoundException e) {
+        } catch (Throwable e) {
             // pass
         }
 
@@ -765,7 +766,7 @@ public class JustHook implements IXposedHookLoadPackage {
                             return true;
                         }
                     });
-        } catch (ClassNotFoundException e) {
+        } catch (Throwable e) {
             // pass
         }
 
@@ -783,7 +784,7 @@ public class JustHook implements IXposedHookLoadPackage {
                             return true;
                         }
                     });
-        } catch (ClassNotFoundException e) {
+        } catch (Throwable e) {
             // pass
         }
         try {
@@ -1096,7 +1097,15 @@ public class JustHook implements IXposedHookLoadPackage {
         classNameList.clear();
         try {
             //系统的 classloader是 Pathclassloader需要 拿到他的 父类 BaseClassloader才有 pathList
-            Field pathListField = Objects.requireNonNull(mLoader.getClass().getSuperclass()).getDeclaredField("pathList");
+            Class baseClassLoader = mLoader.getClass().getSuperclass();
+            while(baseClassLoader != BaseDexClassLoader.class && baseClassLoader!=Objects.class){
+                baseClassLoader = baseClassLoader.getSuperclass();
+            }
+            if(baseClassLoader == Objects.class){
+                CLogUtils.e("getAllClassName初始化失败!无法找到BaseDexClassLoader.class");
+                return;
+            }
+            Field pathListField = Objects.requireNonNull(baseClassLoader).getDeclaredField("pathList");
             pathListField.setAccessible(true);
             Object dexPathList = pathListField.get(mLoader);
             Field dexElementsField = dexPathList.getClass().getDeclaredField("dexElements");
