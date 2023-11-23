@@ -110,10 +110,44 @@ public class JustHook implements IXposedHookLoadPackage {
 //        } else {
 //            if (lpparam.packageName.equals(InvokPackage)) {
         CLogUtils.e("找到APP:"+lpparam.packageName);
+
+        //处理淘系APP的spdy
+        try {
+            if(lpparam.packageName.equals("com.taobao.idlefish")) {
+                attachTB(lpparam);
+            }
+        }catch (Exception e){
+
+        }
+
+
+
         HookAttach();
 //            }
 //        }
         this.lpparam = lpparam;
+    }
+
+    private void attachTB(XC_LoadPackage.LoadPackageParam lpparam) {
+        CLogUtils.e("进入闲鱼HOOK");
+        String className = "mtopsdk.mtop.global.SwitchConfig";
+        Class<?> clazz = findClass(className, lpparam.classLoader);
+//        Method c = XposedHelpers.findMethodExactIfExists(clazz, "C", null);
+//        if(c==null)return;
+        XposedHelpers.findAndHookMethod(clazz, "C", new XC_MethodHook() {
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                CLogUtils.e("HOOK isGlobalSpdySwitchOpen");
+                param.setResult(false);
+            }
+        });
+//        XposedHelpers.findAndHookMethod(clazz, "isGlobalSpdySwitchOpen", Context.class, new XC_MethodHook() {
+//            @Override
+//            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+//                CLogUtils.e("isGlobalSpdySwitchOpen");
+//                param.setResult(true);
+//            }
+//        });
     }
 
     /**
