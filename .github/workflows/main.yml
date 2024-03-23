@@ -40,16 +40,8 @@ jobs:
       # 构建项目
       - name: Build with Gradle
         run: ./gradlew build
-
-      # 将秘钥解码后将文件放置 ~/.gradle/secring.gpg
-      - name: Decode
-        run: |
-          echo "${{secrets.SIGNING_SECRET_KEY_RING_FILE}}" > ~/.gradle/secring.gpg.b64
-          base64 -d ~/.gradle/secring.gpg.b64 > ~/.gradle/secring.gpg
-      
-      # 发布项目
-      - name: Publish
-        run: ./gradlew publish -Psigning.keyId=${{secrets.SIGNING_KEY_ID}} -Psigning.password= -Psigning.secretKeyRingFile=$(echo ~/.gradle/secring.gpg)
-        env:
-          OSSRH_USERNAME: ${{secrets.OSSRH_USERNAME}}
-          OSSRH_PASSWORD: ${{secrets.OSSRH_PASSWORD}}
+        
+      - uses: actions/upload-artifact@v3
+        with:
+         name: ${{ github.sha }}
+         path: app/build/outputs/apk
