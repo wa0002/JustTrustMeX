@@ -1,9 +1,18 @@
-name: Chaos CI with Gradle
+name: CI
+env:
+  TZ: Asia/Shanghai
+
 on:
   push:
-    branches: [ main ]
+    paths-ignore:
+      - '**/README.md'
+      - '.github/workflows/*'
+      - '!.github/workflows/main.yml'
   pull_request:
-    branches: [ main ]
+    paths-ignore:
+      - '**/README.md'
+      - '.github/workflows/*'
+      - '!.github/workflows/main.yml'
 
 jobs:
   build:
