@@ -1,5 +1,4 @@
 name: Chaos CI with Gradle
-
 on:
   push:
     branches: [ main ]
