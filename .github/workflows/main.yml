@@ -41,7 +41,39 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
         
-      - uses: actions/upload-artifact@v3
+      - name: Build debug APK
+        run: bash ./gradlew assembleDebug --stacktrace
+
+      - name: Bump version for release
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.1
         with:
-         name: ${{ github.sha }}
-         path: app/build/outputs/apk
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create a release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: Age and Gender Detection App - ${{ steps.tag_version.outputs.new_tag }}
+          tag_name: ${{ steps.tag_version.outputs.new_tag }}
+          body_path: CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Upload APK to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: app/build/outputs/apk/debug/app-debug.apk
+          asset_name: app-debug.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload APK to artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          name: app
+          path: app/build/outputs/apk/debug/app-debug.apk
