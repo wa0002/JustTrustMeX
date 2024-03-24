@@ -1,17 +1,16 @@
-env:
-  TZ: Asia/Shanghai
+name: Android CI
 
 on:
   push:
-    paths-ignore:
-      - '**/README.md'
-      - '.github/workflows/*'
-      - '!.github/workflows/main.yml'
+    branches: [ main ]
   pull_request:
-    paths-ignore:
-      - '**/README.md'
-      - '.github/workflows/*'
-      - '!.github/workflows/main.yml'
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      ssh:
+        description: 'SSH connection to Actions'
+        required: false
+        default: 'false'
 
 jobs:
   build:
