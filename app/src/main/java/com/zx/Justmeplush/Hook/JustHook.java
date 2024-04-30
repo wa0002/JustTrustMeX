@@ -134,7 +134,7 @@ public class JustHook implements IXposedHookLoadPackage {
         Class<?> clazz = findClass(className, lpparam.classLoader);
 //        Method c = XposedHelpers.findMethodExactIfExists(clazz, "C", null);
 //        if(c==null)return;
-        XposedHelpers.findAndHookMethod(clazz, "C", new XC_MethodHook() {
+        XposedHelpers.findAndHookMethod(clazz, "isGlobalSpdySwitchOpen", new XC_MethodHook() {
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                 CLogUtils.e("HOOK isGlobalSpdySwitchOpen");
