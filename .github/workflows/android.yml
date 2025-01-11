@@ -44,7 +44,7 @@ jobs:
           prerelease: false
           release_name: Age and Gender Detection App - ${{ steps.tag_version.outputs.new_tag }}
           tag_name: ${{ steps.tag_version.outputs.new_tag }}
-          body_path: CHANGELOG.md
+          body_path: README.md
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
