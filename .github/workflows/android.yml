@@ -1,4 +1,4 @@
-name: Build and Release Android APK
+name: Build 和 Release Android APK
 on: [ 'workflow_dispatch']
 
 jobs:
@@ -49,7 +49,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload APK to release
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v4
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
