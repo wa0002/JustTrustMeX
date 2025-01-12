@@ -42,14 +42,14 @@ jobs:
         with:
           draft: false
           prerelease: false
-          release_name: Age and Gender Detection App - ${{ steps.tag_version.outputs.new_tag }}
+          release_name: Age 和 Gender Detection App - ${{ steps.tag_version.outputs.new_tag }}
           tag_name: ${{ steps.tag_version.outputs.new_tag }}
           body_path: CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload APK to release
-        uses: actions/upload-release-asset@v4
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
@@ -59,7 +59,7 @@ jobs:
           asset_content_type: application/vnd.android.package-archive
 
       - name: Upload APK to artifacts
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: app
           path: app/build/outputs/apk/debug/app-debug.apk
